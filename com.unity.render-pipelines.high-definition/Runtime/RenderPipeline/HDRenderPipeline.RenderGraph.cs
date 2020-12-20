@@ -1104,9 +1104,7 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             if (m_CurrentDebugDisplaySettings.DebugHideSky(hdCamera) ||
                 !m_SkyManager.RequiresPreRenderSky(hdCamera))
-            {
                 return;
-            }
 
             using (var builder = renderGraph.AddRenderPass<PreRenderSkyPassData>("Pre Render Sky", out var passData))
             {
@@ -1145,9 +1143,7 @@ namespace UnityEngine.Rendering.HighDefinition
         void RenderSky(RenderGraph renderGraph, HDCamera hdCamera, TextureHandle colorBuffer, TextureHandle volumetricLighting, TextureHandle depthStencilBuffer, TextureHandle depthTexture)
         {
             if (m_CurrentDebugDisplaySettings.DebugHideSky(hdCamera))
-            {
                 return;
-            }
 
             using (var builder = renderGraph.AddRenderPass<RenderSkyPassData>("Render Sky And Fog", out var passData))
             {
