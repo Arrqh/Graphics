@@ -100,8 +100,8 @@ namespace UnityEngine.Rendering.HighDefinition
             m_CloudLayerMaterial.SetTexture(_CloudTexture, m_PrecomputedData.cloudTextureRT);
 
             float intensity = builtinParams.sunLight ? builtinParams.sunLight.intensity : 1;
-            var paramsA = cloudLayer.layerA.GetRenderingParameters(intensity);
-            var paramsB = cloudLayer.layerB.GetRenderingParameters(intensity);
+            var paramsA = cloudLayer.GetRenderingParameters(intensity);
+            var paramsB = cloudLayer.GetRenderingParameters(intensity);
             paramsA.Item1.w = cloudLayer.upperHemisphereOnly.value ? 1 : 0;
             paramsB.Item1.w = cloudLayer.opacity.value;
 
@@ -110,13 +110,14 @@ namespace UnityEngine.Rendering.HighDefinition
             s_VectorArray[0] = paramsA.Item2; s_VectorArray[1] = paramsB.Item2;
             m_CloudLayerMaterial.SetVectorArray(HDShaderIDs._ColorFilter, s_VectorArray);
 
-            CoreUtils.SetKeyword(m_CloudLayerMaterial, "USE_CLOUD_MOTION", cloudLayer.layerA.distortionMode.value != CloudDistortionMode.None);
-            if (cloudLayer.layerA.distortionMode.value != CloudDistortionMode.None)
-                cloudLayer.layerA.scrollFactor += cloudLayer.layerA.scrollSpeed.value * dt * 0.01f;
-            CoreUtils.SetKeyword(m_CloudLayerMaterial, "USE_FLOWMAP", cloudLayer.layerA.distortionMode.value == CloudDistortionMode.Flowmap);
-            if (cloudLayer.layerA.distortionMode.value == CloudDistortionMode.Flowmap)
-                m_CloudLayerMaterial.SetTexture(_FlowmapA, cloudLayer.layerA.flowmap.value);
+            CoreUtils.SetKeyword(m_CloudLayerMaterial, "USE_CLOUD_MOTION", cloudLayer.distortionMode.value != CloudDistortionMode.None);
+            if (cloudLayer.distortionMode.value != CloudDistortionMode.None)
+                cloudLayer.scrollFactor += cloudLayer.scrollSpeed.value * dt * 0.01f;
+            CoreUtils.SetKeyword(m_CloudLayerMaterial, "USE_FLOWMAP", cloudLayer.distortionMode.value == CloudDistortionMode.Flowmap);
+            if (cloudLayer.distortionMode.value == CloudDistortionMode.Flowmap)
+                m_CloudLayerMaterial.SetTexture(_FlowmapA, cloudLayer.flowmap.value);
 
+            /*
             CoreUtils.SetKeyword(m_CloudLayerMaterial, "USE_SECOND_CLOUD_LAYER", cloudLayer.layers.value == CloudMapMode.Double);
             if (cloudLayer.layers.value == CloudMapMode.Double)
             {
@@ -127,6 +128,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 if (cloudLayer.layerB.distortionMode.value == CloudDistortionMode.Flowmap)
                     m_CloudLayerMaterial.SetTexture(_FlowmapB, cloudLayer.layerB.flowmap.value);
             }
+            */
 
             // This matrix needs to be updated at the draw call frequency.
             m_PropertyBlock.SetMatrix(HDShaderIDs._PixelCoordToViewDirWS, builtinParams.pixelCoordToViewDirMatrix);
@@ -249,8 +251,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.SetComputeVectorParam(s_BakeCloudTextureCS, HDShaderIDs._Params, params1);
                 cmd.SetComputeTextureParam(s_BakeCloudTextureCS, s_BakeCloudTextureKernel, _CloudTexture, cloudTextureRT);
 
-                cmd.SetComputeTextureParam(s_BakeCloudTextureCS, s_BakeCloudTextureKernel, _CloudMapA, cloudLayer.layerA.cloudMap.value);
-                var paramsA = cloudLayer.layerA.GetBakingParameters();
+                cmd.SetComputeTextureParam(s_BakeCloudTextureCS, s_BakeCloudTextureKernel, _CloudMapA, cloudLayer.cloudMap.value);
+                var paramsA = cloudLayer.GetBakingParameters();
                 paramsA.Item2.w = 1.0f / cloudTextureWidth;
 
                 if (cloudLayer.NumLayers == 1)
@@ -261,6 +263,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 }
                 else
                 {
+                    /*
                     cmd.SetComputeTextureParam(s_BakeCloudTextureCS, s_BakeCloudTextureKernel, _CloudMapB, cloudLayer.layerB.cloudMap.value);
                     var paramsB = cloudLayer.layerB.GetBakingParameters();
 
@@ -269,6 +272,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     cmd.SetComputeVectorArrayParam(s_BakeCloudTextureCS, HDShaderIDs._Params1, s_VectorArray);
                     s_VectorArray[0] = paramsA.Item2; s_VectorArray[1] = paramsB.Item2;
                     cmd.SetComputeVectorArrayParam(s_BakeCloudTextureCS, HDShaderIDs._Params2, s_VectorArray);
+                    */
                 }
 
                 const int groupSizeX = 8;
@@ -299,8 +303,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.SetComputeTextureParam(s_BakeCloudShadowsCS, s_BakeCloudShadowsKernel, _CloudTexture, cloudTextureRT);
                 cmd.SetComputeTextureParam(s_BakeCloudShadowsCS, s_BakeCloudShadowsKernel, _CloudShadows, cloudShadowsRT);
 
-                var paramsA = cloudLayer.layerA.GetRenderingParameters(0);
-                var paramsB = cloudLayer.layerB.GetRenderingParameters(0);
+                var paramsA = cloudLayer.GetRenderingParameters(0);
+                var paramsB = cloudLayer.GetRenderingParameters(0);
                 paramsA.Item1.z = paramsA.Item1.z * 0.2f;
                 paramsB.Item1.z = paramsB.Item1.z * 0.2f;
                 paramsA.Item1.w = cloudLayer.upperHemisphereOnly.value ? 1 : 0;
@@ -309,18 +313,19 @@ namespace UnityEngine.Rendering.HighDefinition
                 s_VectorArray[0] = paramsA.Item1; s_VectorArray[1] = paramsB.Item1;
                 cmd.SetComputeVectorArrayParam(s_BakeCloudShadowsCS, HDShaderIDs._FlowmapParam, s_VectorArray);
 
-                bool useSecond = (cloudLayer.layers.value == CloudMapMode.Double) && cloudLayer.layerB.castShadows.value;
-                CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "DISABLE_MAIN_LAYER", !cloudLayer.layerA.castShadows.value);
-                CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_SECOND_CLOUD_LAYER", useSecond);
+                //bool useSecond = (cloudLayer.layers.value == CloudMapMode.Double) && cloudLayer.layerB.castShadows.value;
+                CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "DISABLE_MAIN_LAYER", !cloudLayer.castShadows.value);
+                //CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_SECOND_CLOUD_LAYER", useSecond);
 
-                if (cloudLayer.layerA.castShadows.value)
+                if (cloudLayer.castShadows.value)
                 {
-                    CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_CLOUD_MOTION", cloudLayer.layerA.distortionMode.value != CloudDistortionMode.None);
-                    CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_FLOWMAP", cloudLayer.layerA.distortionMode.value == CloudDistortionMode.Flowmap);
-                    if (cloudLayer.layerA.distortionMode.value == CloudDistortionMode.Flowmap)
-                        cmd.SetComputeTextureParam(s_BakeCloudShadowsCS, s_BakeCloudShadowsKernel, _FlowmapA, cloudLayer.layerA.flowmap.value);
+                    CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_CLOUD_MOTION", cloudLayer.distortionMode.value != CloudDistortionMode.None);
+                    CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_FLOWMAP", cloudLayer.distortionMode.value == CloudDistortionMode.Flowmap);
+                    if (cloudLayer.distortionMode.value == CloudDistortionMode.Flowmap)
+                        cmd.SetComputeTextureParam(s_BakeCloudShadowsCS, s_BakeCloudShadowsKernel, _FlowmapA, cloudLayer.flowmap.value);
                 }
 
+                /*
                 if (useSecond)
                 {
                     CoreUtils.SetKeyword(s_BakeCloudShadowsCS, "USE_SECOND_CLOUD_MOTION", cloudLayer.layerB.distortionMode.value != CloudDistortionMode.None);
@@ -328,6 +333,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     if (cloudLayer.layerB.distortionMode.value == CloudDistortionMode.Flowmap)
                         cmd.SetComputeTextureParam(s_BakeCloudShadowsCS, s_BakeCloudShadowsKernel, _FlowmapB, cloudLayer.layerB.flowmap.value);
                 }
+                */
 
                 const int groupSizeX = 8;
                 const int groupSizeY = 8;

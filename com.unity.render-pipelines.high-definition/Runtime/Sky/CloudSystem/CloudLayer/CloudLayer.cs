@@ -111,19 +111,24 @@ namespace UnityEngine.Rendering.HighDefinition
         [Tooltip("Specifies the resolution of the texture HDRP uses to represent the cloud shadows.")]
         public CloudLayerEnumParameter<CloudShadowsResolution> shadowResolution = new CloudLayerEnumParameter<CloudShadowsResolution>(CloudShadowsResolution.CloudShadowsResolution128);
 
+        //NOTE: unfortunately, in the core package, they added the ability to have nested classes in a volume
+        //since this port is to HDRP 10.x only, I can't bring that part over
+        //it displays correctly in editor, but when getting the volume component fails to get the settings for the cloud layers
+        //so the best solution is probably to make them not be a sub class, which is going to be a bit messy!
+        //note that the hash functions have to be aware of this too, as well as the editor in cloudlayereditor
 
         /// <summary>
         /// Cloud Map Volume Parameters.
         /// This groups parameters for one cloud map layer.
         /// </summary>
-        [Serializable]
-        public class CloudMap
-        {
+        //[Serializable]
+        //public class CloudMap
+        //{
             internal static Texture s_DefaultTexture = null;
 
             /// <summary>Texture used to render the clouds.</summary>
             [Tooltip("Specify the texture HDRP uses to render the clouds (in LatLong layout).")]
-            public TextureParameter cloudMap = new TextureParameter(CloudMap.s_DefaultTexture);
+            public TextureParameter cloudMap = new TextureParameter(s_DefaultTexture);
             /// <summary>Opacity multiplier for the red channel.</summary>
             [Tooltip("Opacity multiplier for the red channel.")]
             public ClampedFloatParameter opacityR = new ClampedFloatParameter(1.0f, 0.0f, 1.0f);
@@ -234,7 +239,7 @@ namespace UnityEngine.Rendering.HighDefinition
             /// Returns the hash code of the CloudMap parameters.
             /// </summary>
             /// <returns>The hash code of the CloudMap parameters.</returns>
-            public override int GetHashCode()
+            public int GetHashCodeLayerA()
             {
                 int hash = GetBakingHashCode();
 
@@ -259,36 +264,36 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 return hash;
             }
-        }
+        //}
 
         /// <summary>Layer A.</summary>
-        public CloudMap layerA = new CloudMap();
+        //public CloudMap layerA = new CloudMap();
         /// <summary>Layer B.</summary>
-        public CloudMap layerB = new CloudMap();
+        //public CloudMap layerB = new CloudMap();
 
         internal int NumLayers => (layers == CloudMapMode.Single) ? 1 : 2;
-        internal bool CastShadows => layerA.castShadows.value || (layers == CloudMapMode.Double && layerB.castShadows.value);
+        internal bool CastShadows => castShadows.value;// || (layers == CloudMapMode.Double && layerB.castShadows.value);
 
         internal int GetBakingHashCode(Light sunLight)
         {
             int hash = 17;
-            bool lighting = layerA.lighting.value;
-            bool shadows = sunLight != null && layerA.castShadows.value;
+            bool lightingBool = lighting.value;
+            bool shadows = sunLight != null && castShadows.value;
 
             unchecked
             {
                 hash = hash * 23 + upperHemisphereOnly.GetHashCode();
                 hash = hash * 23 + layers.GetHashCode();
                 hash = hash * 23 + resolution.GetHashCode();
-                hash = hash * 23 + layerA.GetBakingHashCode();
-                if (layers.value == CloudMapMode.Double)
-                {
-                    hash = hash * 23 + layerB.GetBakingHashCode();
-                    lighting |= layerB.lighting.value;
-                    shadows |= layerB.castShadows.value;
-                }
+                hash = hash * 23 + GetBakingHashCode();
+                //if (layers.value == CloudMapMode.Double)
+                //{
+                //    hash = hash * 23 + layerB.GetBakingHashCode();
+                //    lightingBool |= layerB.lighting.value;
+                //    shadows |= layerB.castShadows.value;
+                //}
 
-                if (lighting && sunLight != null)
+                if (lightingBool && sunLight != null)
                     hash = hash * 23 + sunLight.transform.rotation.GetHashCode();
                 if (shadows)
                     hash = hash * 23 + shadowResolution.GetHashCode();
@@ -312,9 +317,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 hash = hash * 23 + layers.GetHashCode();
                 hash = hash * 23 + resolution.GetHashCode();
 
-                hash = hash * 23 + layerA.GetHashCode();
-                if (layers.value == CloudMapMode.Double)
-                    hash = hash * 23 + layerB.GetHashCode();
+                hash = hash * 23 + GetHashCodeLayerA();
+                //if (layers.value == CloudMapMode.Double)
+                //    hash = hash * 23 + layerB.GetHashCode();
             }
 
             return hash;
@@ -331,8 +336,8 @@ namespace UnityEngine.Rendering.HighDefinition
         /// </summary>
         static void Init()
         {
-            if (CloudMap.s_DefaultTexture == null)
-                CloudMap.s_DefaultTexture = HDRenderPipeline.defaultAsset.renderPipelineResources.textures.defaultCloudMap;
+            if (s_DefaultTexture == null)
+                s_DefaultTexture = HDRenderPipeline.defaultAsset.renderPipelineResources.textures.defaultCloudMap;
         }
     }
 }

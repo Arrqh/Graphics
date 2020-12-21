@@ -10,6 +10,11 @@ float4x4 _PixelCoordToViewDirWS;
     #define _PixelCoordToViewDirWS  _XRPixelCoordToViewDirWS[unity_StereoEyeIndex]
 #endif
 
+real FastAtan2(real y, real x)
+{
+    return FastATan(y / x) + (y >= 0.0 ? PI : -PI) * (x < 0.0);
+}
+
 // Generates a world-space view direction for sky and atmospheric effects
 float3 GetSkyViewDirWS(float2 positionCS)
 {
