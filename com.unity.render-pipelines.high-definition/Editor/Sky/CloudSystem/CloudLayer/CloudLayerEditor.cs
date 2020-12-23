@@ -15,6 +15,8 @@ namespace UnityEditor.Rendering.HighDefinition
 
         public override bool hasAdvancedMode => true;
 
+        public SerializedDataParameter anisotropy;
+
         public SerializedDataParameter cloudMap;
         public SerializedDataParameter[] opacities;
 
@@ -77,6 +79,8 @@ namespace UnityEditor.Rendering.HighDefinition
             thickness = Unpack(o.Find(x => x.thickness));
             castShadows = Unpack(o.Find(x => x.castShadows));
 
+            anisotropy = Unpack(o.Find(x => x.anisotropy));
+
             //m_Layers = new CloudMapParameter[]
             //{
             //    UnpackCloudMap(o.Find(x => x.layerA)),
@@ -135,6 +139,8 @@ namespace UnityEditor.Rendering.HighDefinition
             PropertyField(m_LayerCount);
             if (isInAdvancedMode)
                 PropertyField(m_Resolution);
+
+            PropertyField(anisotropy);
 
             PropertyField("Layer A");
             //if (m_LayerCount.value.intValue == (int)CloudMapMode.Double)

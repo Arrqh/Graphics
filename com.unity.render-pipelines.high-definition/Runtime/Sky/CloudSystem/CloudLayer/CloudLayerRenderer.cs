@@ -130,6 +130,22 @@ namespace UnityEngine.Rendering.HighDefinition
             }
             */
 
+            //add pbr sky parameters in for cloud blending
+            var pbrSky = builtinParams.skySettings as PhysicallyBasedSky;
+
+            Vector3 cameraPos = builtinParams.worldSpaceCameraPos;
+            Vector3 planetCenter = pbrSky.GetPlanetCenterPosition(cameraPos);
+            float R = pbrSky.GetPlanetaryRadius();
+
+            Vector3 cameraToPlanetCenter = planetCenter - cameraPos;
+            float r = cameraToPlanetCenter.magnitude;
+            cameraPos = planetCenter - Mathf.Max(R, r) * cameraToPlanetCenter.normalized;
+
+            m_PropertyBlock.SetVector(HDShaderIDs._WorldSpaceCameraPos1, cameraPos);
+            m_PropertyBlock.SetMatrix(HDShaderIDs._ViewMatrix1, builtinParams.viewMatrix);
+
+            m_PropertyBlock.SetFloat("_Anisotropy", cloudLayer.anisotropy.value);
+
             // This matrix needs to be updated at the draw call frequency.
             m_PropertyBlock.SetMatrix(HDShaderIDs._PixelCoordToViewDirWS, builtinParams.pixelCoordToViewDirMatrix);
             CoreUtils.DrawFullScreen(cmd, m_CloudLayerMaterial, m_PropertyBlock, renderForCubemap ? 0 : 1);

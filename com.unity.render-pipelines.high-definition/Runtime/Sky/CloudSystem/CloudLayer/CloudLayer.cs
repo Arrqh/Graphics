@@ -117,6 +117,8 @@ namespace UnityEngine.Rendering.HighDefinition
         //so the best solution is probably to make them not be a sub class, which is going to be a bit messy!
         //note that the hash functions have to be aware of this too, as well as the editor in cloudlayereditor
 
+        public ClampedFloatParameter anisotropy = new ClampedFloatParameter(0f, -1f, 1f);
+
         /// <summary>
         /// Cloud Map Volume Parameters.
         /// This groups parameters for one cloud map layer.
